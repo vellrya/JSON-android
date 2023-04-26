@@ -2,9 +2,39 @@
 
 <sub><sup>image credit: Ismael Pérez Ortiz</sup></sub>
 
+Fork description:
+===============================
+
+1. Package name changed: org.json -> org.json.android (no need to shade)
+2. Duplicate keys allowed (no more "Duplicate key" exception)
+3. Preserve order of element (+test)
+4. JDK 1.6 -> 1.8
+
+All changes marked with [Fork] comment.
+
+Using this version in Android app will allow you to get an iterator for JSONArray, "similar" and other features not available in the standard org.json package from the Android SDK.
+
+To keep it similar to the standard Android package, the fork allows duplicate keys during parsing and preserves the order of adding elements by using LinkedHashMap, so it can be used in the JVM as well if you need this features.
+
+*How to use:*
+
+[Add Jitpack repo to project](https://jitpack.io/#vellrya/JSON-android/4b198d92fb), then import:
+
+    dependencies {
+        implementation 'com.github.vellrya:JSON-android:4b198d92fb'
+    }
+
+Replace all "import org.json." -> "import org.json.android." with the IDE.
+For future import you should use classes from org.json.android package.
+Done.
+
+Based on ver. 20230227
+
+Original description
+===============================
+
 
 JSON in Java [package org.json]
-===============================
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.json/json.svg)](https://mvnrepository.com/artifact/org.json/json)
 
