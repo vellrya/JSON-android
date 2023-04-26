@@ -100,9 +100,9 @@ public class JSONWriter {
                 }
                 this.writer.append(string);
             } catch (IOException e) {
-            	// Android as of API 25 does not support this exception constructor
-            	// however we won't worry about it. If an exception is happening here
-            	// it will just throw a "Method not found" exception instead.
+                // Android as of API 25 does not support this exception constructor
+                // however we won't worry about it. If an exception is happening here
+                // it will just throw a "Method not found" exception instead.
                 throw new JSONException(e);
             }
             if (this.mode == 'o') {
@@ -143,16 +143,16 @@ public class JSONWriter {
     private JSONWriter end(char m, char c) throws JSONException {
         if (this.mode != m) {
             throw new JSONException(m == 'a'
-                ? "Misplaced endArray."
-                : "Misplaced endObject.");
+                    ? "Misplaced endArray."
+                    : "Misplaced endObject.");
         }
         this.pop(m);
         try {
             this.writer.append(c);
         } catch (IOException e) {
-        	// Android as of API 25 does not support this exception constructor
-        	// however we won't worry about it. If an exception is happening here
-        	// it will just throw a "Method not found" exception instead.
+            // Android as of API 25 does not support this exception constructor
+            // however we won't worry about it. If an exception is happening here
+            // it will just throw a "Method not found" exception instead.
             throw new JSONException(e);
         }
         this.comma = true;
@@ -195,9 +195,10 @@ public class JSONWriter {
             try {
                 JSONObject topObject = this.stack[this.top - 1];
                 // don't use the built in putOnce method to maintain Android support
-				if(topObject.has(string)) {
-					throw new JSONException("Duplicate key \"" + string + "\"");
-				}
+                // [FORK]
+//				if(topObject.has(string)) {
+//					throw new JSONException("Duplicate key \"" + string + "\"");
+//				}
                 topObject.put(string, true);
                 if (this.comma) {
                     this.writer.append(',');
@@ -208,9 +209,9 @@ public class JSONWriter {
                 this.mode = 'o';
                 return this;
             } catch (IOException e) {
-            	// Android as of API 25 does not support this exception constructor
-            	// however we won't worry about it. If an exception is happening here
-            	// it will just throw a "Method not found" exception instead.
+                // Android as of API 25 does not support this exception constructor
+                // however we won't worry about it. If an exception is happening here
+                // it will just throw a "Method not found" exception instead.
                 throw new JSONException(e);
             }
         }
@@ -257,10 +258,10 @@ public class JSONWriter {
         }
         this.top -= 1;
         this.mode = this.top == 0
-            ? 'd'
-            : this.stack[this.top - 1] == null
-            ? 'a'
-            : 'k';
+                ? 'd'
+                : this.stack[this.top - 1] == null
+                ? 'a'
+                : 'k';
     }
 
     /**

@@ -15,17 +15,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.ResourceBundle;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -161,13 +152,8 @@ public class JSONObject {
      * Construct an empty JSONObject.
      */
     public JSONObject() {
-        // HashMap is used on purpose to ensure that elements are unordered by
-        // the specification.
-        // JSON tends to be a portable transfer format to allows the container
-        // implementations to rearrange their items for a faster element
-        // retrieval based on associative access.
-        // Therefore, an implementation mustn't rely on the order of the item.
-        this.map = new HashMap<String, Object>();
+        // [FORK] LinkedHashMap is used on purpose to ensure that elements are ORDERED
+        this.map = new LinkedHashMap<String, Object>();
     }
 
     /**
@@ -211,19 +197,19 @@ public class JSONObject {
             char prev = x.getPrevious();
             c = x.nextClean();
             switch (c) {
-            case 0:
-                throw x.syntaxError("A JSONObject text must end with '}'");
-            case '}':
-                return;
-            case '{':
-            case '[':
-                if(prev=='{') {
-                    throw x.syntaxError("A JSON Object can not directly nest another JSON Object or JSON Array.");
-                }
-                // fall through
-            default:
-                x.back();
-                key = x.nextValue().toString();
+                case 0:
+                    throw x.syntaxError("A JSONObject text must end with '}'");
+                case '}':
+                    return;
+                case '{':
+                case '[':
+                    if(prev=='{') {
+                        throw x.syntaxError("A JSON Object can not directly nest another JSON Object or JSON Array.");
+                    }
+                    // fall through
+                default:
+                    x.back();
+                    key = x.nextValue().toString();
             }
 
             // The key is followed by ':'.
@@ -237,10 +223,11 @@ public class JSONObject {
 
             if (key != null) {
                 // Check if key exists
-                if (this.opt(key) != null) {
-                    // key already exists
-                    throw x.syntaxError("Duplicate key \"" + key + "\"");
-                }
+                // [FORK]
+//                if (this.opt(key) != null) {
+//                    // key already exists
+//                    throw x.syntaxError("Duplicate key \"" + key + "\"");
+//                }
                 // Only add value if non-null
                 Object value = x.nextValue();
                 if (value!=null) {
@@ -251,17 +238,17 @@ public class JSONObject {
             // Pairs are separated by ','.
 
             switch (x.nextClean()) {
-            case ';':
-            case ',':
-                if (x.nextClean() == '}') {
+                case ';':
+                case ',':
+                    if (x.nextClean() == '}') {
+                        return;
+                    }
+                    x.back();
+                    break;
+                case '}':
                     return;
-                }
-                x.back();
-                break;
-            case '}':
-                return;
-            default:
-                throw x.syntaxError("Expected a ',' or '}'");
+                default:
+                    throw x.syntaxError("Expected a ',' or '}'");
             }
         }
     }
@@ -279,13 +266,15 @@ public class JSONObject {
      */
     public JSONObject(Map<?, ?> m) {
         if (m == null) {
-            this.map = new HashMap<String, Object>();
+            // [FORK]
+            this.map = new LinkedHashMap<String, Object>();
         } else {
-            this.map = new HashMap<String, Object>(m.size());
-        	for (final Entry<?, ?> e : m.entrySet()) {
-        	    if(e.getKey() == null) {
-        	        throw new NullPointerException("Null key.");
-        	    }
+            // [FORK]
+            this.map = new LinkedHashMap<String, Object>(m.size());
+            for (final Entry<?, ?> e : m.entrySet()) {
+                if(e.getKey() == null) {
+                    throw new NullPointerException("Null key.");
+                }
                 final Object value = e.getValue();
                 if (value != null) {
                     this.map.put(String.valueOf(e.getKey()), wrap(value));
@@ -455,7 +444,8 @@ public class JSONObject {
      * @param initialCapacity initial capacity of the internal map.
      */
     protected JSONObject(int initialCapacity){
-        this.map = new HashMap<String, Object>(initialCapacity);
+        // [FORK]
+        this.map = new LinkedHashMap<String, Object>(initialCapacity);
     }
 
     /**
@@ -611,11 +601,11 @@ public class JSONObject {
         Object object = this.get(key);
         if (object.equals(Boolean.FALSE)
                 || (object instanceof String && ((String) object)
-                        .equalsIgnoreCase("false"))) {
+                .equalsIgnoreCase("false"))) {
             return false;
         } else if (object.equals(Boolean.TRUE)
                 || (object instanceof String && ((String) object)
-                        .equalsIgnoreCase("true"))) {
+                .equalsIgnoreCase("true"))) {
             return true;
         }
         throw wrongValueFormatException(key, "Boolean", object, null);
@@ -996,9 +986,9 @@ public class JSONObject {
      *        is empty.
      */
     public JSONArray names() {
-    	if(this.map.isEmpty()) {
-    		return null;
-    	}
+        if(this.map.isEmpty()) {
+            return null;
+        }
         return new JSONArray(this.map.keySet());
     }
 
@@ -1159,7 +1149,7 @@ public class JSONObject {
     static BigDecimal objectToBigDecimal(Object val, BigDecimal defaultValue) {
         return objectToBigDecimal(val, defaultValue, true);
     }
-    
+
     /**
      * @param val value to convert
      * @param defaultValue default value to return is the conversion doesn't work or is null.
@@ -1537,12 +1527,12 @@ public class JSONObject {
                         final Object result = method.invoke(bean);
                         if (result != null) {
                             // check cyclic dependency and throw error if needed
-                            // the wrap and populateMap combination method is 
+                            // the wrap and populateMap combination method is
                             // itself DFS recursive
                             if (objectsRecord.contains(result)) {
                                 throw recursivelyDefinedObjectException(key);
                             }
-                            
+
                             objectsRecord.add(result);
 
                             this.map.put(key, wrap(result, objectsRecord));
@@ -1551,7 +1541,7 @@ public class JSONObject {
 
                             // we don't use the result anywhere outside of wrap
                             // if it's a resource we should be sure to close it
-                            // after calling toString 
+                            // after calling toString
                             if (result instanceof Closeable) {
                                 try {
                                     ((Closeable) result).close();
@@ -1969,7 +1959,7 @@ public class JSONObject {
      * @throws IllegalArgumentException if {@code jsonPointer} has invalid syntax
      */
     public Object optQuery(String jsonPointer) {
-    	return optQuery(new JSONPointer(jsonPointer));
+        return optQuery(new JSONPointer(jsonPointer));
     }
 
     /**
@@ -2029,42 +2019,42 @@ public class JSONObject {
             b = c;
             c = string.charAt(i);
             switch (c) {
-            case '\\':
-            case '"':
-                w.write('\\');
-                w.write(c);
-                break;
-            case '/':
-                if (b == '<') {
+                case '\\':
+                case '"':
                     w.write('\\');
-                }
-                w.write(c);
-                break;
-            case '\b':
-                w.write("\\b");
-                break;
-            case '\t':
-                w.write("\\t");
-                break;
-            case '\n':
-                w.write("\\n");
-                break;
-            case '\f':
-                w.write("\\f");
-                break;
-            case '\r':
-                w.write("\\r");
-                break;
-            default:
-                if (c < ' ' || (c >= '\u0080' && c < '\u00a0')
-                        || (c >= '\u2000' && c < '\u2100')) {
-                    w.write("\\u");
-                    hhhh = Integer.toHexString(c);
-                    w.write("0000", 0, 4 - hhhh.length());
-                    w.write(hhhh);
-                } else {
                     w.write(c);
-                }
+                    break;
+                case '/':
+                    if (b == '<') {
+                        w.write('\\');
+                    }
+                    w.write(c);
+                    break;
+                case '\b':
+                    w.write("\\b");
+                    break;
+                case '\t':
+                    w.write("\\t");
+                    break;
+                case '\n':
+                    w.write("\\n");
+                    break;
+                case '\f':
+                    w.write("\\f");
+                    break;
+                case '\r':
+                    w.write("\\r");
+                    break;
+                default:
+                    if (c < ' ' || (c >= '\u0080' && c < '\u00a0')
+                            || (c >= '\u2000' && c < '\u2100')) {
+                        w.write("\\u");
+                        hhhh = Integer.toHexString(c);
+                        w.write("0000", 0, 4 - hhhh.length());
+                        w.write(hhhh);
+                    } else {
+                        w.write(c);
+                    }
             }
         }
         w.write('"');
@@ -2104,10 +2094,10 @@ public class JSONObject {
                 Object valueThis = entry.getValue();
                 Object valueOther = ((JSONObject)other).get(name);
                 if(valueThis == valueOther) {
-                	continue;
+                    continue;
                 }
                 if(valueThis == null) {
-                	return false;
+                    return false;
                 }
                 if (valueThis instanceof JSONObject) {
                     if (!((JSONObject)valueThis).similar(valueOther)) {
@@ -2119,11 +2109,11 @@ public class JSONObject {
                     }
                 } else if (valueThis instanceof Number && valueOther instanceof Number) {
                     if (!isNumberSimilar((Number)valueThis, (Number)valueOther)) {
-                    	return false;
+                        return false;
                     }
                 } else if (valueThis instanceof JSONString && valueOther instanceof JSONString) {
                     if (!((JSONString) valueThis).toJSONString().equals(((JSONString) valueOther).toJSONString())) {
-                    	return false;
+                        return false;
                     }
                 } else if (!valueThis.equals(valueOther)) {
                     return false;
@@ -2425,10 +2415,10 @@ public class JSONObject {
      *             If the value is or contains an invalid number.
      */
     public static String valueToString(Object value) throws JSONException {
-    	// moves the implementation to JSONWriter as:
-    	// 1. It makes more sense to be part of the writer class
-    	// 2. For Android support this method is not available. By implementing it in the Writer
-    	//    Android users can use the writer with the built in Android JSONObject implementation.
+        // moves the implementation to JSONWriter as:
+        // 1. It makes more sense to be part of the writer class
+        // 2. For Android support this method is not available. By implementing it in the Writer
+        //    Android users can use the writer with the built in Android JSONObject implementation.
         return JSONWriter.valueToString(value);
     }
 
@@ -2596,7 +2586,7 @@ public class JSONObject {
             writer.write('{');
 
             if (length == 1) {
-            	final Entry<String,?> entry = this.entrySet().iterator().next();
+                final Entry<String,?> entry = this.entrySet().iterator().next();
                 final String key = entry.getKey();
                 writer.write(quote(key));
                 writer.write(':');
@@ -2653,7 +2643,8 @@ public class JSONObject {
      * @return a java.util.Map containing the entries of this object
      */
     public Map<String, Object> toMap() {
-        Map<String, Object> results = new HashMap<String, Object>();
+        // [FORK]
+        Map<String, Object> results = new LinkedHashMap<String, Object>();
         for (Entry<String, Object> entry : this.entrySet()) {
             Object value;
             if (entry.getValue() == null || NULL.equals(entry.getValue())) {
@@ -2706,7 +2697,7 @@ public class JSONObject {
      */
     private static JSONException recursivelyDefinedObjectException(String key) {
         return new JSONException(
-            "JavaBean object contains recursively defined member variable of key " + quote(key)
+                "JavaBean object contains recursively defined member variable of key " + quote(key)
         );
     }
 }
